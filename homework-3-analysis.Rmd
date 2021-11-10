@@ -1,0 +1,155 @@
+--
+title: "Homework 3 analysis"
+author: "Thomas Lenihan"
+date: "11/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stats)
+library(tidyverse)
+library(latex2exp)
+```
+
+### Analysis 
+
+
+1. Set up a simple mass balance model of groundwater driven by inputs and outputs.
+
+ $\Delta S = inputs - outputs$
+
+2. Specify the initial inputs and outputs for 2000. This requires determining the inputs and losses of groundwater in Figure 2.
+
+groundwater inputs: 18.2 10^9^ m^3^
+
+Some Hints: 
+
+- The total amount of groundwater use (outputs) is provided in the Groundwater label. It was 18.2 in the year 2000 according to Figure 2, and will be __ in the year 2050 under BAU 5 assumptions, according to Figure 4.
+- The net change in groundwater in 2000 is the Chg in groundwater storage. It was -5.4 according to Figure 2, meaning that groundwater levels declined in 2000. You can find the 2050 estimate for net change in groundwater in Figure 4.
+- The net change in groundwater is equal to the inputs minus the outputs. Because Figures 2 and 4 provide us with the net change in groundwater and the outputs (withdrawals), you can solve for inputs. In 2000, these inputs were 18.2 - 5.4 = 12.8 (cf.Figure 2) 
+
+```{r fig2}
+
+out00 = 18.2
+chng00 = -5.4
+in00 = 12.8
+in00 = out00 + chng00
+
+in00
+
+```
+
+3. Determine the conditions at the end of the simulation (2050). This requires determining the inputs and outputs of groundwater in Figure 4.
+
+```{r fig4}
+
+out50 = 27
+chng50 = -16.7
+in50 = out50 + chng50
+
+in50
+
+```
+
+4. Fit a linear trend in the input and output terms between the year 2000 and 2050 in order to determine the transient changes in recharge and withdrawals over this 50-year period.
+
+```{r linear}
+# fit linear trend lines between the years 2000-2050
+year <- c(2000, 2050)
+
+# trend line for inputs
+in_trend <- c(in00, in50)
+in_lm <- lm(__ ~ __)
+in_lm
+
+# trend line for outputs
+out_trend <- c(out00, out50)
+out_lm <- lm(__ ~ __)
+out_lm
+```
+
+```{r}
+# create a dataframe with all the years from 2000-2050
+years <- seq(from=2000, to=2050, by=1)
+massbal <- as.data.frame(years)
+
+# use the equation from lm to fill in columns for ins and outs
+massbal$ins = __
+massbal$outs = __
+
+head(massbal)
+```
+
+
+```{r}
+# plot the ins and outs over the years - what will happen to storage based on these trends?
+ggplot(massbal) + 
+  geom_line(aes(x=__, y=__, col='Input')) +
+  geom_line(aes(x=__, y=__, col='Output')) +
+  xlab("Year") + 
+  ylab(TeX("Groundwater flux ($10^9$ $m^3$)")) + 
+  theme(legend.title = element_blank())
+
+# can do mass balance for each year to see the changes 
+massbal$chnge = massbal$__ - massbal$__
+ggplot(massbal) + 
+  geom_line(aes(x=__, y=__)) +
+  xlab("Year") + 
+  ylab(TeX("Change in groundwater ($10^9$ $m^3$)"))
+
+# can also get the linear model of the change each year
+lm(__ ~ __)
+massbal$chnge_lm <- __
+```
+
+
+5. Calculate the changes in groundwater resources from 2000-2050 for at least three scenarios based on varying initial conditions of groundwater availability: The expected amount of groundwater (from section 2, above) as well as for upper and lower estimates provided in section 2.
+
+- From Curmi et al., Figure 7, you can assume that the expected value of groundwater resources in 2000 was
+*350x10^9 m3*. Let's further assume that uncertainty regarding this value follows a normal distribution around that mean value, with a standard deviation of 115x109 m3. 
+- Based on a normal distribution with this mean and standard deviation, there is a 90% chance that the actual
+amount of groundwater in CA is somewhere between the approximate lower limit of *190x10^9 m3*
+and an approximate upper limit of *550x10^9 m3*.
+
+```{r scenarios}
+# all of the flows were also 10^9, so there is no need for unit conversions
+
+# integrate over the water lost starting in 2000
+water_lost <- function(year){
+  int <- integrate(function(x){-0.226*x + 446.6}, lower = 2000, upper = year) #this function comes from the linear model of change over year
+  return(int$value)
+}
+massbal$w_lost <- sapply(massbal$years, water_lost)
+
+# create columns for the average, lower bounds, and upper bouds
+massbal$gw_storage = massbal$w_lost + __
+massbal$gw_low = massbal$w_lost + __
+massbal$gw_upp = massbal$w_lost + __
+
+head(massbal)
+
+```
+
+### Create plots
+
+```{r plot}
+# use ggplot here to create a beautiful plot to include
+
+# example plot which we don't need to show - not the nicest
+ggplot(massbal) + 
+  geom_rect(aes(ymin=-Inf, ymax=0, xmin=2000, xmax=2050), alpha = 0.02, fill='red') +
+  geom_line(aes(x=__, y=__, col='Average')) +
+  geom_line(aes(x=__, y=__, col='Bounds'), linetype='dashed') + 
+  geom_line(aes(x=__, y=__, col='Bounds'), linetype='dashed') +
+  xlab("Year") + 
+  ylab(TeX("Groundwater stoarge ($10^9$ $m^3$)")) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle("Projected groundwater under business as usual with 90% confidence interval")
+  
+
+```
+
+### All that is left is for the presentation! 
+
+Your findings should be presented in the form of a brief 1-2 page technical brief. This document should summarize your approach, present your analysis in 1 or 2 clear and compelling figures, and provide a set of key findings that could be incorporated into a broader policy-focused presentation to stakeholders. Any figures should contain information regarding uncertainty, and should be able to "stand alone” from the work based on only the title, labels, figure text, and a brief caption. Your brief should also highlight any key assumptions, data sources, and provide recommendations on next steps to improve or refine your assessment. Your brief should be written for a broad audience, but you should make sure to communicate in a scientific/ professional manner.
